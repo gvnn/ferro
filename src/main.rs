@@ -3,6 +3,7 @@
 //! A simple example integrating juniper in actix-web
 use std::io;
 use std::sync::Arc;
+use std::env;
 
 use actix_web::{middleware, web, App, Error, HttpResponse, HttpServer, Result};
 use juniper::http::graphiql::graphiql_source;
@@ -50,6 +51,12 @@ async fn main() -> io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
+    // Get the port number to listen on.
+    let port = env::var("PORT")
+        .unwrap_or_else(|_| "3000".to_string())
+        .parse()
+        .expect("PORT must be a number");
+
     // Create Juniper schema
     let schema = std::sync::Arc::new(create_schema());
 
@@ -62,7 +69,7 @@ async fn main() -> io::Result<()> {
             .service(web::resource("/graphql").route(web::post().to(graphql)))
             .service(web::resource("/graphiql").route(web::get().to(graphiql)))
     })
-        .bind("127.0.0.1:8080")?
+        .bind(("127.0.0.1", port))?
         .run()
         .await
 }
